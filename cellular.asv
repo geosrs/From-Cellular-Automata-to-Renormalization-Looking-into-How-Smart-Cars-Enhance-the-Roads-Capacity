@@ -1,0 +1,45 @@
+function [capacity,density]=cellular(probc);
+clc;
+%clear all;
+close all;
+
+B=1;             %The number of the lanes
+plazalength=150;  %The length of the simulating highways
+h=NaN;           %h is the handle of the image
+freshtime=0.1;
+a=0.73/5.0;   %最大加速加速度
+b=1.67/5.0;   %最大减速加速度绝对值
+T=0.2;   %司机的反应时间
+flux_cnt=zeros(plazalength,1);
+probe_itvl=5;  %the probing interval for detecting capacity
+[plaza,v]=create_plaza(B,plazalength);
+h=show_plaza(plaza,h,freshtime);
+
+iterations=100;    % 迭代次数
+density=probc;          % 车辆的密度
+probv=[0.3 1];      % 两种车流的密度分布
+probslow=0.3;       % 随机慢化的概率
+Dsafe=1;            % 表示换道事车至少与后面车距离多少个单位才算安全
+VTypes=[12,18];       %道路上一共有几种最大速度不同的车辆,速度是什么
+[plaza,v,vmax]=new_cars(plaza,v,probc,probv,VTypes);%一开始就在车道上布置车辆，做周期循环驾驶，也方便观察流量密度之间的关系
+
+size(find(plaza~=0))
+PLAZA=rot90(plaza,2);
+h=show_plaza(PLAZA,h,freshtime);
+for t=1:iterations;
+    size(find(plaza~=0))
+    PLAZA=rot90(plaza,2);
+    h=show_plaza(PLAZA,h,freshtime);
+    [v,gap,LUP,LDOWN]=para_count(plaza,v,vmax,a,b,T,probslow);
+    %[plaza,v,vmax]=switch_lane(plaza,v,vmax,gap,LUP,LDOWN);
+   % [plaza,v,vmax]=random_slow(plaza,v,vmax,probslow);
+    [plaza,v,vmax,flux_cnt]=move_forward(plaza,v,vmax,t,probe_itvl);
+    
+end
+
+capacity=sum(flux_cnt)
+/(floor(plazalength/probe_itvl));
+
+
+
+
